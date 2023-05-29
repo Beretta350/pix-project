@@ -18,11 +18,11 @@ type PixKeyRepositoryInterface interface {
 
 type PixKey struct {
 	Base      `valid:"required"`
-	Kind      string   `json:"kind" valid:"notnull"`
-	Key       string   `json:"key" valid:"notnull"`
-	AccountId string   `json:"account_id" valid:"notnull"`
+	Kind      string   `json:"kind" gorm:"type:varchar(20)" valid:"notnull"`
+	Key       string   `json:"key" gorm:"type:varchar(255)" valid:"notnull"`
+	AccountID string   `gorm:"column:account_id;type:uuid;not null" valid:"-"`
 	Account   *Account `valid:"-"`
-	Status    string   `json:"status" valid:"notnull"`
+	Status    string   `json:"status" gorm:"type:varchar(20)" valid:"notnull"`
 }
 
 func (pk *PixKey) isValid() error {
@@ -42,7 +42,7 @@ func (pk *PixKey) isValid() error {
 	return nil
 }
 
-func NewPixKey(kind, key, accountId, status string, account *Account) (*PixKey, error) {
+func NewPixKey(kind, key string, account *Account) (*PixKey, error) {
 	pixKey := PixKey{
 		Kind:    kind,
 		Key:     key,

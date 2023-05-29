@@ -16,9 +16,9 @@ const (
 )
 
 type TransactionRepositoryInterface interface {
-	RegisterTransaction(transaction *Transaction) error
-	SaveCompletedTransaction(transaction *Transaction) error
-	FindTransaction(id string) (*Transaction, error)
+	Register(transaction *Transaction) error
+	Save(transaction *Transaction) error
+	Find(id string) (*Transaction, error)
 }
 
 type Transactions struct {
@@ -28,11 +28,13 @@ type Transactions struct {
 type Transaction struct {
 	Base              `valid:"required"`
 	AccountFrom       *Account `valid:"-"`
-	Amount            float64  `json:"amount" valid:"notnull"`
+	AccountFromID     string   `gorm:"column:account_from_id;type:uuid;" valid:"notnull"`
+	Amount            float64  `json:"amount" gorm:"type:float" valid:"notnull"`
 	PixKeyTo          *PixKey  `valid:"-"`
-	Status            string   `json:"status" valid:"notnull"`
-	Description       string   `json:"description" valid:"notnull"`
-	CancelDescription string   `json:"cancel_description" valid:"-"`
+	PixKeyIdTo        string   `gorm:"column:pix_key_id_to;type:uuid;" valid:"notnull"`
+	Status            string   `json:"status" gorm:"type:varchar(20)" valid:"notnull"`
+	Description       string   `json:"description" gorm:"type:varchar(255)" valid:"-"`
+	CancelDescription string   `json:"cancel_description" gorm:"type:varchar(255)" valid:"-"`
 }
 
 func (t *Transaction) isValid() error {
@@ -49,7 +51,7 @@ func (t *Transaction) isValid() error {
 		return errors.New("invalid status transaction")
 	}
 
-	if t.PixKeyTo.AccountId == t.AccountFrom.ID {
+	if t.PixKeyTo.AccountID == t.AccountFrom.ID {
 		return errors.New("transaction to the same account")
 	}
 
@@ -78,7 +80,7 @@ func (t *Transaction) Cancel(description string) error {
 	return err
 }
 
-func NewTransaction(account *Account, amount float64, pixKeyTo *PixKey, description string) (*Transaction, error) {
+func NewTransaction(account *Account, amount float64, pixKeyTo *PixKey, description string, id string) (*Transaction, error) {
 	transaction := Transaction{
 		AccountFrom:       account,
 		Amount:            amount,
@@ -88,7 +90,12 @@ func NewTransaction(account *Account, amount float64, pixKeyTo *PixKey, descript
 		CancelDescription: "",
 	}
 
-	transaction.ID = uuid.NewV4().String()
+	if id == "" {
+		transaction.ID = uuid.NewV4().String()
+	} else {
+		transaction.ID = id
+	}
+
 	transaction.CreatedAt = time.Now()
 
 	err := transaction.isValid()
